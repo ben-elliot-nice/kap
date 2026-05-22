@@ -1,72 +1,90 @@
 #!/usr/bin/env bash
 # Rebuild Swift-based native deps from source for the current architecture.
 # Run after `yarn install` when building on Apple Silicon.
-# These packages publish pre-built Intel binaries to npm; running this script
-# replaces them with binaries compiled natively for the host arch.
+#
+# These packages publish pre-built Intel binaries to npm (source not included).
+# This script clones each package's GitHub repo, compiles for the host arch,
+# and replaces the Intel binary in node_modules.
+#
+# Requirements: swift, git
 
 set -euo pipefail
 
 ARCH=$(uname -m)
-NODE_MODULES="$(cd "$(dirname "$0")/.." && pwd)/node_modules"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+NODE_MODULES="$REPO_ROOT/node_modules"
+BUILD_DIR="$(mktemp -d)/kap-swift-deps"
 
 echo "Host architecture: $ARCH"
+echo "Build dir: $BUILD_DIR"
+mkdir -p "$BUILD_DIR"
 
-rebuild_swift_package() {
-  local pkg_dir="$NODE_MODULES/$1"
-  local binary_name="$2"
-  local output_path="$3"
+clone_and_build() {
+  local name="$1"
+  local repo="$2"
+  local subdir="${3:-}"       # subdirectory within repo to build from (optional)
+  local binary_name="$4"
+  local output_path="$5"
+  local extra_flags="${6:-}"  # extra swift build flags
 
-  if [ ! -d "$pkg_dir" ]; then
-    echo "  SKIP $1 (not installed)"
-    return
+  echo "  Building $name..."
+  local src="$BUILD_DIR/$name"
+  git clone --depth=1 --quiet "https://github.com/$repo.git" "$src"
+
+  if [ -n "$subdir" ]; then
+    src="$src/$subdir"
   fi
 
-  echo "  Building $1..."
   (
-    cd "$pkg_dir"
-    swift build --configuration=release 2>&1
-    local built=".build/release/$binary_name"
-    if [ -f "$built" ]; then
-      cp "$built" "$output_path"
-      echo "  OK $1 -> $output_path ($(file "$output_path" | grep -o 'arm64\|x86_64'))"
-    else
-      echo "  FAIL $1: binary not found at $built"
+    cd "$src"
+    # Init submodules if present
+    if [ -f ".gitmodules" ]; then
+      git submodule update --init --quiet
+      # Build from submodule dir if it has Package.swift
+      local sub
+      sub=$(git submodule status | awk '{print $2}' | head -1)
+      if [ -n "$sub" ] && [ -f "$sub/Package.swift" ]; then
+        cd "$sub"
+      fi
+    fi
+    swift build --configuration=release $extra_flags 2>&1 | grep -E "error:|Build complete|warning: " || true
+    # Swift places output in arch-specific dir on newer toolchains
+    local built
+    built=$(find .build -name "$binary_name" -not -path "*/dSYM/*" -type f 2>/dev/null | head -1)
+    if [ -z "$built" ]; then
+      echo "  FAIL $name: binary '$binary_name' not found after build"
       exit 1
     fi
+    cp "$built" "$output_path"
+    echo "  OK $name ($(file "$output_path" | grep -o 'arm64\|x86_64\|universal'))"
   )
 }
 
 echo "Rebuilding Swift native deps..."
 
-rebuild_swift_package "macos-audio-devices"           "audio-devices"   "$NODE_MODULES/macos-audio-devices/audio-devices"
-rebuild_swift_package "mac-open-with"                 "open-with"       "$NODE_MODULES/mac-open-with/open-with"
-rebuild_swift_package "mac-windows"                   "MacWindows"      "$NODE_MODULES/mac-windows/scripts/MacWindows"
+clone_and_build "macos-audio-devices" \
+  "karaggeorge/macos-audio-devices" "" \
+  "audio-devices" "$NODE_MODULES/macos-audio-devices/audio-devices"
 
-# mac-windows also ships ActivateWindow
-if [ -d "$NODE_MODULES/mac-windows" ]; then
-  (
-    cd "$NODE_MODULES/mac-windows"
-    built=".build/release/ActivateWindow"
-    if [ -f "$built" ]; then
-      cp "$built" "scripts/ActivateWindow"
-      echo "  OK mac-windows/ActivateWindow ($(file scripts/ActivateWindow | grep -o 'arm64\|x86_64'))"
-    fi
-  )
-fi
+clone_and_build "mac-open-with" \
+  "karaggeorge/mac-open-with" "" \
+  "open-with" "$NODE_MODULES/mac-open-with/open-with"
 
-# node-mac-app-icon: check what build system it uses
-if [ -d "$NODE_MODULES/node-mac-app-icon" ]; then
-  echo "  Checking node-mac-app-icon build system..."
-  if [ -f "$NODE_MODULES/node-mac-app-icon/Package.swift" ]; then
-    rebuild_swift_package "node-mac-app-icon" "run" "$NODE_MODULES/node-mac-app-icon/run"
-  elif [ -f "$NODE_MODULES/node-mac-app-icon/binding.gyp" ]; then
-    echo "  node-mac-app-icon uses node-gyp (handled by electron-builder install-app-deps)"
-  else
-    echo "  WARN node-mac-app-icon: unknown build system, skipping"
-  fi
-fi
+clone_and_build "mac-windows-MacWindows" \
+  "karaggeorge/mac-windows" "swift/MacWindows" \
+  "mac-windows" "$NODE_MODULES/mac-windows/scripts/MacWindows"
 
-echo "Done. Verify results:"
+clone_and_build "mac-windows-ActivateWindow" \
+  "karaggeorge/mac-windows" "swift/ActivateWindow" \
+  "activate-window" "$NODE_MODULES/mac-windows/scripts/ActivateWindow"
+
+# node-mac-app-icon uses a submodule; -static-stdlib is deprecated in modern Swift
+clone_and_build "node-mac-app-icon" \
+  "sallar/node-mac-app-icon" "" \
+  "GetAppIcon" "$NODE_MODULES/node-mac-app-icon/run"
+
+echo ""
+echo "Done. Results:"
 for f in \
   "$NODE_MODULES/macos-audio-devices/audio-devices" \
   "$NODE_MODULES/mac-open-with/open-with" \
@@ -74,6 +92,10 @@ for f in \
   "$NODE_MODULES/mac-windows/scripts/ActivateWindow" \
   "$NODE_MODULES/node-mac-app-icon/run"; do
   if [ -f "$f" ]; then
-    echo "  $(file "$f" | sed 's|.*/node_modules/||')"
+    echo "  $(file "$f" | grep -oE 'arm64|x86_64|universal') — ${f##*/node_modules/}"
+  else
+    echo "  MISSING — ${f##*/node_modules/}"
   fi
 done
+
+rm -rf "$BUILD_DIR"
