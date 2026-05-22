@@ -1,6 +1,7 @@
 {
   "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
+    "skipLibCheck": true,
     "outDir": "dist-js",
     "target": "es2019",
     "module": "commonjs",
