@@ -15,13 +15,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '16'
           cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --ignore-scripts
         env:
           NODE_ENV: development
+          NEXT_TELEMETRY_DISABLED: '1'
 
       - name: Run electron postinstall (download Electron binary)
         run: node node_modules/electron/install.js
@@ -29,8 +30,13 @@ jobs:
       - name: Rebuild Swift native deps for arm64
         run: yarn rebuild-swift
 
-      - name: Build
-        run: yarn build
+      - name: Build main process
+        run: yarn build-main
+
+      - name: Build renderer
+        run: node_modules/.bin/next build renderer && node_modules/.bin/next export renderer
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
 
       - name: Rebuild native addons for Electron
         run: npx electron-builder install-app-deps
