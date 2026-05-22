@@ -27,10 +27,21 @@ jobs:
       - name: Run electron postinstall (download Electron binary)
         run: node node_modules/electron/install.js
 
-      - name: Patch Next.js 10 type-check for Node 18 exports compatibility
+      - name: Patch Next.js 10 type-check for Node 18 compatibility
         run: |
-          sed -i '' 's|@types/react/index\.d\.ts|@types/react|g' node_modules/next/dist/lib/has-necessary-dependencies.js
-          sed -i '' 's|@types/node/index\.d\.ts|@types/node|g' node_modules/next/dist/lib/has-necessary-dependencies.js
+          node -e "
+            const fs = require('fs');
+            const fp = 'node_modules/next/dist/lib/has-necessary-dependencies.js';
+            let c = fs.readFileSync(fp, 'utf8');
+            // Remove @types checks — packages are installed but can't be resolved
+            // via require() in Node 18 (no JS main entry). typescript check kept.
+            c = c.replace(/,\{file:'@types\/react\/index\.d\.ts',pkg:'@types\/react'\}/g, '');
+            c = c.replace(/,\{file:'@types\/node\/index\.d\.ts',pkg:'@types\/node'\}/g, '');
+            c = c.replace(/,\{file:'@types\/react',pkg:'@types\/react'\}/g, '');
+            c = c.replace(/,\{file:'@types\/node',pkg:'@types\/node'\}/g, '');
+            fs.writeFileSync(fp, c);
+            console.log('Patched has-necessary-dependencies.js');
+          "
 
       - name: Rebuild Swift native deps for arm64
         run: yarn rebuild-swift
