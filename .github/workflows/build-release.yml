@@ -19,13 +19,21 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --ignore-scripts
+        env:
+          NODE_ENV: development
+
+      - name: Run electron postinstall (download Electron binary)
+        run: node node_modules/electron/install.js
 
       - name: Rebuild Swift native deps for arm64
         run: yarn rebuild-swift
 
       - name: Build
         run: yarn build
+
+      - name: Rebuild native addons for Electron
+        run: npx electron-builder install-app-deps
 
       - name: Package arm64 DMG
         run: npx electron-builder --mac --arm64
