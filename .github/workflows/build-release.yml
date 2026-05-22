@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '18'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -26,6 +26,13 @@ jobs:
 
       - name: Run electron postinstall (download Electron binary)
         run: node node_modules/electron/install.js
+
+      - name: Debug @types/react location
+        run: |
+          echo "=== @types/react locations ==="
+          find node_modules -name "index.d.ts" -path "*/@types/react/*" 2>/dev/null | head -10
+          echo "=== require.resolve test ==="
+          node -e "try { console.log('FOUND:', require.resolve('@types/react/index.d.ts', {paths: [require('path').resolve('renderer')]})); } catch(e) { console.error('FAILED:', e.message); }"
 
       - name: Rebuild Swift native deps for arm64
         run: yarn rebuild-swift
