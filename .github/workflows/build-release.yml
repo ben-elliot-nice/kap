@@ -1,0 +1,99 @@
+name: Build and Release (arm64)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15  # Apple Silicon (arm64)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Rebuild Swift native deps for arm64
+        run: yarn rebuild-swift
+
+      - name: Build
+        run: yarn build
+
+      - name: Package arm64 DMG
+        run: npx electron-builder --mac --arm64
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Rename DMG
+        run: mv dist/*-arm64.dmg dist/Kap-arm64.dmg
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kap-arm64
+          path: dist/Kap-arm64.dmg
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Kap-arm64.dmg
+          name: ${{ github.ref_name }}
+          generate_release_notes: false
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew tap
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          SHA256=$(shasum -a 256 dist/Kap-arm64.dmg | awk '{print $1}')
+          VERSION=${GITHUB_REF_NAME#v}
+          URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/Kap-arm64.dmg"
+
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/ben-elliot-nice/homebrew-kap-arm.git" tap
+          cd tap
+
+          cat > Casks/kap-arm.rb << CASK
+          cask "kap-arm" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "${URL}"
+            name "Kap (Apple Silicon)"
+            desc "Open-source screen recorder built with web technology"
+            homepage "https://getkap.co/"
+
+            auto_updates false
+            depends_on macos: ">= :catalina"
+
+            app "Kap.app"
+
+            zap trash: [
+              "~/Library/Application Support/Kap",
+              "~/Library/Caches/com.wulkano.kap",
+              "~/Library/Caches/com.wulkano.kap.ShipIt",
+              "~/Library/Cookies/com.wulkano.kap.binarycookies",
+              "~/Library/Preferences/com.wulkano.kap.helper.plist",
+              "~/Library/Preferences/com.wulkano.kap.plist",
+              "~/Library/Saved Application State/com.wulkano.kap.savedState",
+            ]
+          end
+          CASK
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Casks/kap-arm.rb
+          git commit -m "kap-arm ${VERSION}"
+          git push
