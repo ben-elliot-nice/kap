@@ -27,12 +27,10 @@ jobs:
       - name: Run electron postinstall (download Electron binary)
         run: node node_modules/electron/install.js
 
-      - name: Debug @types/react location
+      - name: Patch Next.js 10 type-check for Node 18 exports compatibility
         run: |
-          echo "=== @types/react locations ==="
-          find node_modules -name "index.d.ts" -path "*/@types/react/*" 2>/dev/null | head -10
-          echo "=== require.resolve test ==="
-          node -e "try { console.log('FOUND:', require.resolve('@types/react/index.d.ts', {paths: [require('path').resolve('renderer')]})); } catch(e) { console.error('FAILED:', e.message); }"
+          sed -i 's|@types/react/index.d.ts|@types/react|g; s|@types/node/index.d.ts|@types/node|g' \
+            node_modules/next/dist/lib/has-necessary-dependencies.js
 
       - name: Rebuild Swift native deps for arm64
         run: yarn rebuild-swift
