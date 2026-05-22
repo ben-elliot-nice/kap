@@ -29,8 +29,8 @@ jobs:
 
       - name: Patch Next.js 10 type-check for Node 18 exports compatibility
         run: |
-          sed -i 's|@types/react/index.d.ts|@types/react|g; s|@types/node/index.d.ts|@types/node|g' \
-            node_modules/next/dist/lib/has-necessary-dependencies.js
+          sed -i '' 's|@types/react/index\.d\.ts|@types/react|g' node_modules/next/dist/lib/has-necessary-dependencies.js
+          sed -i '' 's|@types/node/index\.d\.ts|@types/node|g' node_modules/next/dist/lib/has-necessary-dependencies.js
 
       - name: Rebuild Swift native deps for arm64
         run: yarn rebuild-swift
