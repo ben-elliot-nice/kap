@@ -21,11 +21,12 @@
     "test": "yarn lint && yarn test:main",
     "start": "tsc && run-electron .",
     "build-main": "tsc",
-    "build-renderer": "next build renderer && next export renderer",
+    "build-renderer": "NODE_OPTIONS='--openssl-legacy-provider' next build renderer && next export renderer",
     "build": "yarn build-main && yarn build-renderer",
     "dist": "npm run build && electron-builder",
     "pack": "npm run build && electron-builder --dir",
     "postinstall": "electron-builder install-app-deps",
+    "rebuild-swift": "bash scripts/rebuild-swift-deps.sh",
     "sentry-version": "echo \"$npm_package_name@$npm_package_version\"",
     "dev": "next dev renderer"
   },
@@ -53,14 +54,14 @@
     "electron-util": "^0.14.2",
     "ensure-error": "^3.0.1",
     "execa": "5.0.0",
-    "ffmpeg-static": "^4.4.1",
-    "gifsicle": "^5.2.0",
+    "ffmpeg-static": "^5.3.0",
+    "gifsicle": "5.3.0",
     "got": "^9.6.0",
     "insight": "^0.10.3",
     "is-online": "^8.4.0",
     "lodash": "^4.17.21",
     "mac-open-with": "^1.2.3",
-    "mac-screen-capture-permissions": "^1.1.0",
+    "mac-screen-capture-permissions": "^2.1.0",
     "mac-windows": "^1.0.0",
     "macos-audio-devices": "^1.4.0",
     "macos-version": "^5.2.1",
@@ -89,8 +90,7 @@
     "tildify": "^2.0.0",
     "tmp": "^0.2.0",
     "unstated": "^1.2.0",
-    "unstated-next": "^1.1.0",
-    "yarn": "^1.22.10"
+    "unstated-next": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -243,7 +243,6 @@
   },
   "build": {
     "appId": "com.wulkano.kap",
-    "afterSign": "electron-builder-notarize",
     "protocols": {
       "name": "kap",
       "schemes": [
