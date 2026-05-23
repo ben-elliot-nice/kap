@@ -53,6 +53,7 @@ jobs:
         run: node_modules/.bin/next build renderer && node_modules/.bin/next export renderer
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+          NODE_OPTIONS: '--openssl-legacy-provider'
 
       - name: Rebuild native addons for Electron
         run: npx electron-builder install-app-deps
