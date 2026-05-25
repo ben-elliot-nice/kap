@@ -47,7 +47,13 @@ export const getAudioDevices = async () => {
     }
   }
 };
-let defaultDevice = audioDevices.getDefaultInputDevice.sync();
+let defaultDevice: any;
+try {
+  defaultDevice = audioDevices.getDefaultInputDevice.sync();
+} catch {
+  // No default input device or swift libs unavailable — safe to ignore
+}
+
 export const getDefaultInputDevice = () => {
   try {
     const device = defaultDevice || audioDevices.getDefaultInputDevice.sync();

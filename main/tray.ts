@@ -1,8 +1,11 @@
 'use strict';
 
-import { Tray } from 'electron';
+import { Tray, app } from 'electron';
 import { KeyboardEvent } from 'electron/main';
 import path from 'path';
+
+// Use unpacked path so nativeImage can load from real filesystem (not asar)
+const staticPath = () => path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'static');
 import { getCogMenu } from './menus/cog';
 import { getRecordMenu } from './menus/record';
 import { track } from './common/analytics';
@@ -31,7 +34,7 @@ const openPausedContextMenu = async () => {
 const openCropperWindow = () => windowManager.cropper?.open();
 
 export const initializeTray = () => {
-  tray = new Tray(path.join(__dirname, '..', 'static', 'menubarDefaultTemplate.png'));
+  tray = new Tray(path.join(staticPath(), 'menubarDefaultTemplate.png'));
   tray.on('click', openCropperWindow);
   tray.on('right-click', openContextMenu);
   tray.on('drop-files', (_, files) => {
@@ -55,7 +58,7 @@ export const resetTray = () => {
   tray.removeAllListeners('click');
   tray.removeAllListeners('right-click');
 
-  tray.setImage(path.join(__dirname, '..', 'static', 'menubarDefaultTemplate.png'));
+  tray.setImage(path.join(staticPath(), 'menubarDefaultTemplate.png'));
   tray.on('click', openCropperWindow);
   tray.on('right-click', openContextMenu);
 };
@@ -77,7 +80,7 @@ export const setPausedTray = () => {
 
   tray.removeAllListeners('right-click');
 
-  tray.setImage(path.join(__dirname, '..', 'static', 'pauseTemplate.png'));
+  tray.setImage(path.join(staticPath(), 'pauseTemplate.png'));
   tray.once('click', resumeRecording);
   tray.on('right-click', openPausedContextMenu);
 };
@@ -101,7 +104,7 @@ const animateIcon = async () => new Promise<void>(resolve => {
       const filename = `loading_${number}Template.png`;
 
       try {
-        tray.setImage(path.join(__dirname, '..', 'static', 'menubar-loading', filename));
+        tray.setImage(path.join(staticPath(), 'menubar-loading', filename));
         next();
       } catch {
         trayAnimation = undefined;

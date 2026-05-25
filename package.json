@@ -256,6 +256,9 @@
       "!renderer",
       "renderer/out"
     ],
+    "asarUnpack": [
+      "static/**/*"
+    ],
     "mac": {
       "electronUpdaterCompatibility": ">=2.16",
       "category": "public.app-category.productivity",
