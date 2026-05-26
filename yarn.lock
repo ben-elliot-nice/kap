@@ -4175,21 +4175,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron-is-dev@npm:>=0.3.0":
-  version: 2.0.0
-  resolution: "electron-is-dev@npm:2.0.0"
-  checksum: 10c0/aa540115f144f9c8c788e13fc581be7b0f9f83422eecb940af6367c67d63c3a656e03ad9c1138f17bcfbafc9edca8b83f655feff24dead2cc4866169c6e565f9
-  languageName: node
-  linkType: hard
-
-"electron-is-dev@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "electron-is-dev@npm:0.3.0"
-  checksum: 10c0/59114e217c1117e85ebd16d439421e0c5f4d085e8f651ab7cf98b53d275b72613f4c085abfc4f7e0ee7927f4f2db7711ae7037bfeb8c931939fe4a1793575572
-  languageName: node
-  linkType: hard
-
-"electron-is-dev@npm:^1.1.0":
+"electron-is-dev@npm:1.2.0":
   version: 1.2.0
   resolution: "electron-is-dev@npm:1.2.0"
   checksum: 10c0/56a4c8e9b9eb7d43da86ee63093b80b32e3fb92cc5e4a60a6b7cacafcdf456ec2c6102d90fa5919fb8b03c61848d4bfa2db820349c5abd9f19e73f7afd2dc22d

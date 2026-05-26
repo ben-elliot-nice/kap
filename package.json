@@ -131,6 +131,9 @@
     "unique-string": "^2.0.0",
     "xo": "^0.38.2"
   },
+  "resolutions": {
+    "electron-is-dev": "1.2.0"
+  },
   "_moduleAliases": {
     "electron": "test/mocks/electron.ts"
   },
