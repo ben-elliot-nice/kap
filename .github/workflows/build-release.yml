@@ -116,7 +116,9 @@ jobs:
 
             postflight do
               system_command "/usr/bin/xattr",
-                args: ["-cr", "#{appdir}/Kap.app"]
+                args: ["-cr", "#{appdir}/Kap.app"],
+                sudo: false,
+                print_stderr: false
             end
 
             zap trash: [
