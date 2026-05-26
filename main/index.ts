@@ -100,7 +100,13 @@ const checkForUpdates = () => {
   initializePlugins();
   initializeDevices();
   initializeAnalytics();
-  initializeTray();
+
+  try {
+    initializeTray();
+  } catch (error) {
+    log.error('initializeTray failed:', error);
+  }
+
   initializeGlobalAccelerators();
   setUpExportsListeners();
 
