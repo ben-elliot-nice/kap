@@ -30,6 +30,11 @@ jobs:
       - name: Run electron postinstall (download Electron binary)
         run: node node_modules/electron/install.js
 
+      - name: Download ffmpeg-static binary
+        run: node node_modules/ffmpeg-static/install.js
+        env:
+          FFMPEG_STATIC_TMPDIR: /tmp/ffmpeg-static
+
       - name: Patch Next.js 10 type-check for Node 18 compatibility
         run: |
           node -e "
