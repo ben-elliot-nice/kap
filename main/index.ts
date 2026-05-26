@@ -81,37 +81,27 @@ const checkForUpdates = () => {
 // Prepare the renderer once the app is ready
 (async () => {
   await app.whenReady();
-  log.info('[startup] app ready');
   require('./utils/errors').setupErrorHandling();
 
   setupRemoteStates();
-  log.info('[startup] remoteStates ok');
-
   setupProtocol();
   app.dock.hide();
   app.setAboutPanelOptions({copyright: 'Copyright © Wulkano'});
   enforceMacOSAppLocation();
-  log.info('[startup] enforceMacOSAppLocation ok');
 
   await prepareNext('./renderer');
-  log.info('[startup] prepareNext ok');
 
   initializePlugins();
-  log.info('[startup] plugins ok');
   initializeDevices();
-  log.info('[startup] devices ok');
   initializeAnalytics();
-  log.info('[startup] analytics ok');
 
   try {
     initializeTray();
-    log.info('[startup] tray ok');
   } catch (error) {
-    log.error('[startup] tray FAILED:', error);
+    log.error('initializeTray failed:', error);
   }
 
   initializeGlobalAccelerators();
-  log.info('[startup] accelerators ok');
   setUpExportsListeners();
 
   if (!app.isDefaultProtocolClient('kap')) {
