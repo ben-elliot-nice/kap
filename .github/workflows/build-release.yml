@@ -35,6 +35,9 @@ jobs:
         env:
           FFMPEG_STATIC_TMPDIR: /tmp/ffmpeg-static
 
+      - name: Download gifsicle binary
+        run: node node_modules/gifsicle/lib/install.js
+
       - name: Patch Next.js 10 type-check for Node 18 compatibility
         run: |
           node -e "

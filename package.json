@@ -260,7 +260,9 @@
       "renderer/out"
     ],
     "asarUnpack": [
-      "static/**/*"
+      "static/**/*",
+      "node_modules/ffmpeg-static/**/*",
+      "node_modules/gifsicle/**/*"
     ],
     "mac": {
       "electronUpdaterCompatibility": ">=2.16",
